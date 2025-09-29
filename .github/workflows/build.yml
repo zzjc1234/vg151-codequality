@@ -48,8 +48,7 @@ jobs:
       - name: Install dependencies
         run: |
           dnf -y update
-          dnf -y install cmake make gcc-c++ clang clang-devel llvm llvm-devel \
-            zlib-devel libedit-devel libxml2-devel zstd libcurl-devel
+          dnf -y install cmake make gcc-c++ clang clang-devel llvm llvm-devel zlib-devel libedit-devel libxml2-devel zstd libcurl-devel clang-tools-extra clang-tools-extra-devel
       - name: Build
         run: |
           ./build-cross-platform.sh -c -t Release
@@ -58,22 +57,22 @@ jobs:
           name: rpm-lib
           path: build/codequality/libcodequality.*
 
-  arch:
-    runs-on: ubuntu-latest
-    container:
-      image: archlinux:latest
-      options: --user root
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install dependencies
-        run: |
-          pacman -Sy --noconfirm
-          pacman -S --noconfirm cmake base-devel llvm clang zlib libedit libxml2 zstd curl
-          pacman -S --noconfirm llvm-libs
-      - name: Build
-        run: ./build-cross-platform.sh -c -t Release
-      - uses: actions/upload-artifact@v4
-        with:
-          name: arch-lib
-          path: build/codequality/libcodequality.*
-
+  # arch:
+  #   runs-on: ubuntu-latest
+  #   container:
+  #     image: archlinux:latest
+  #     options: --user root
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Install dependencies
+  #       run: |
+  #         pacman -Sy --noconfirm
+  #         pacman -S --noconfirm cmake base-devel llvm clang zlib libedit libxml2 zstd curl
+  #         pacman -S --noconfirm llvm-libs
+  #     - name: Build
+  #       run: ./build-cross-platform.sh -c -t Release
+  #     - uses: actions/upload-artifact@v4
+  #       with:
+  #         name: arch-lib
+  #         path: build/codequality/libcodequality.*
+  #

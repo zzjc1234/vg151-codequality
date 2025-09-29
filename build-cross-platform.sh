@@ -93,12 +93,16 @@ elif [[ "$PLATFORM" == "Linux" ]]; then
     echo "Configuring for Linux..."
     
     # Look for common LLVM installation paths on Linux
-    LLVM_VERSIONS=(18 17 16 15 14 13 12 11 10 9)
+    LLVM_VERSIONS=(20 18 17 16 15 14 13 12 11 10 9)
     LLVM_DIR=""
     
     for version in "${LLVM_VERSIONS[@]}"; do
         if [ -d "/usr/lib/llvm-$version/lib/cmake/llvm" ]; then
             LLVM_DIR="/usr/lib/llvm-$version/lib/cmake/llvm"
+            break
+        fi
+        if [ -d "/usr/lib64/llvm-$version/lib64/cmake/llvm" ]; then
+            LLVM_DIR="/usr/lib64/llvm-$version/lib64/cmake/llvm"
             break
         fi
     done
