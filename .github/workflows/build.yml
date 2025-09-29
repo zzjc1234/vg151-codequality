@@ -3,10 +3,10 @@ name: Cross-Platform Build
 on:
   push:
     tags:
-      - 'v*'   # 例如 v1.0.0 会触发
+      - 'v*'
 
 permissions:
-  contents: write   # 必须有写 release 权限
+  contents: write
 
 jobs:
   macos:
