@@ -37,11 +37,11 @@ jobs:
       - name: Build
         run: ./build-cross-platform.sh -c -t Release
       - name: Rename lib
-        run: mv build/codequality/libcodequality.so build/codequality/libcodequality-deb.so
+        run: mv build/codequality/libcodequality.so build/codequality/libcodequality-18.so
       - uses: actions/upload-artifact@v4
         with:
           name: deb-lib
-          path: build/codequality/libcodequality-deb.so
+          path: build/codequality/libcodequality-18.so
 
   redhat:
     runs-on: ubuntu-latest
@@ -58,11 +58,11 @@ jobs:
       - name: Build
         run: ./build-cross-platform.sh -c -t Release
       - name: Rename lib
-        run: mv build/codequality/libcodequality.so build/codequality/libcodequality-rpm.so
+        run: mv build/codequality/libcodequality.so build/codequality/libcodequality-20.so
       - uses: actions/upload-artifact@v4
         with:
           name: rpm-lib
-          path: build/codequality/libcodequality-rpm.so
+          path: build/codequality/libcodequality-20.so
 
   release:
     name: Create Release
