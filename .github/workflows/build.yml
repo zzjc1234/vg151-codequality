@@ -1,61 +1,79 @@
-
-name: Build and Test
+name: Cross-Platform Build
 
 on:
   push:
-    branches: [ master, macos ]
+    # branches:
   pull_request:
-    branches: [ master ]
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-        
-    runs-on: ${{ matrix.os }}
-    
+  macos:
+    runs-on: macos-latest
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Install dependencies (Ubuntu)
-      if: runner.os == 'Linux'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y cmake build-essential llvm-15-dev clang-15-dev clang-tidy-15
-        
-    - name: Install dependencies (macOS)
-      if: runner.os == 'macOS'
-      run: |
-        brew install llvm cmake
-        
-    - name: Configure CMake
-      run: |
-        if [ "$RUNNER_OS" == "Linux" ]; then
-          cmake -DCMAKE_BUILD_TYPE=Release -S . -B build
-        elif [ "$RUNNER_OS" == "macOS" ]; then
-          LLVM_DIR="$(brew --prefix llvm)/lib/cmake/llvm"
-          Clang_DIR="$(brew --prefix llvm)/lib/cmake/clang"
-          cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_DIR="$LLVM_DIR" -DClang_DIR="$Clang_DIR" -S . -B build
-        fi
-      env:
-        RUNNER_OS: ${{ runner.os }}
-        
-    - name: Build
-      run: cmake --build build --config Release
-    
-    - name: Test build output
-      run: |
-        if [ -f "build/codequality/libcodequality.so" ] || [ -f "build/codequality/libcodequality.dylib" ]; then
-          echo "Build successful!"
-          ls -la build/codequality/libcodequality.*
-        else
-          echo "Build failed - library file not found"
-          exit 1
-        fi
-    
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: libcodequality-${{ runner.os }}
-        path: build/codequality/libcodequality.*
+      - uses: actions/checkout@v4
+      - name: Install LLVM via Homebrew
+        run: brew install llvm cmake
+      - name: Build
+        run: |
+          ./build-cross-platform.sh -c -t Release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-lib
+          path: build/codequality/libcodequality.*
+
+  deb:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential
+
+          sudo apt-get install -y clang-18     libclang-18-dev     llvm-18     llvm-18-dev     llvm-18-tools     libzstd-dev     zlib1g-dev     libedit-dev     libcurl4-openssl-dev     libxml2-dev
+      - name: Build
+        run: |
+          ./build-cross-platform.sh -c -t Release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deb-lib
+          path: build/codequality/libcodequality.*
+
+  redhat:
+    runs-on: ubuntu-latest
+    container:
+      image: fedora:latest
+      options: --user root
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          dnf -y update
+          dnf -y install cmake make gcc-c++ clang clang-devel llvm llvm-devel \
+            zlib-devel libedit-devel libxml2-devel zstd libcurl-devel
+      - name: Build
+        run: |
+          ./build-cross-platform.sh -c -t Release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rpm-lib
+          path: build/codequality/libcodequality.*
+
+  arch:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+      options: --user root
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          pacman -Sy --noconfirm
+          pacman -S --noconfirm cmake base-devel llvm clang zlib libedit libxml2 zstd curl
+          pacman -S --noconfirm llvm-libs
+      - name: Build
+        run: ./build-cross-platform.sh -c -t Release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arch-lib
+          path: build/codequality/libcodequality.*
+
