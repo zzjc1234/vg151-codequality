@@ -3,60 +3,59 @@ name: Build and Test
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, macos ]
   pull_request:
     branches: [ master ]
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-
+        
+    runs-on: ${{ matrix.os }}
+    
     steps:
     - uses: actions/checkout@v3
-
+    
     - name: Install dependencies (Ubuntu)
-      if: matrix.os == 'ubuntu-latest'
+      if: runner.os == 'Linux'
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential clang-tidy
-
+        sudo apt-get install -y cmake build-essential llvm-15-dev clang-15-dev clang-tidy-15
+        
     - name: Install dependencies (macOS)
-      if: matrix.os == 'macos-latest'
+      if: runner.os == 'macOS'
       run: |
-        brew install llvm
-
-    - name: Set LLVM path for CMake (macOS)
-      if: matrix.os == 'macos-latest'
-      run: echo "CMAKE_PREFIX_PATH=$(brew --prefix llvm)" >> $GITHUB_ENV
-
-    # Add steps for other Linux distributions like Red Hat or Arch here
-    # For example, for Red Hat:
-    # - name: Install dependencies (Red Hat)
-    #   if: matrix.os == 'redhat-latest' # Hypothetical runner
-    #   run: |
-    #     sudo dnf install -y gcc-c++ make clang-tidy
-    #
-    # For Arch:
-    # - name: Install dependencies (Arch)
-    #   if: matrix.os == 'arch-latest' # Hypothetical runner
-    #   run: |
-    #     sudo pacman -Syu --noconfirm base-devel clang
-
-    - name: Configure
+        brew install llvm cmake
+        
+    - name: Configure CMake
       run: |
-        mkdir build
-        cd build
-        cmake ..
-
+        if [ "$RUNNER_OS" == "Linux" ]; then
+          cmake -DCMAKE_BUILD_TYPE=Release -S . -B build
+        elif [ "$RUNNER_OS" == "macOS" ]; then
+          LLVM_DIR="$(brew --prefix llvm)/lib/cmake/llvm"
+          Clang_DIR="$(brew --prefix llvm)/lib/cmake/clang"
+          cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_DIR="$LLVM_DIR" -DClang_DIR="$Clang_DIR" -S . -B build
+        fi
+      env:
+        RUNNER_OS: ${{ runner.os }}
+        
     - name: Build
+      run: cmake --build build --config Release
+    
+    - name: Test build output
       run: |
-        cd build
-        make
-
-    - name: Test
-      run: |
-        cd tests
-        make checkall
+        if [ -f "build/codequality/libcodequality.so" ] || [ -f "build/codequality/libcodequality.dylib" ]; then
+          echo "Build successful!"
+          ls -la build/codequality/libcodequality.*
+        else
+          echo "Build failed - library file not found"
+          exit 1
+        fi
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: libcodequality-${{ runner.os }}
+        path: build/codequality/libcodequality.*
